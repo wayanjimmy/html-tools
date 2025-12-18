@@ -1,0 +1,524 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bash Command Prettifier</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/atom-one-dark.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+    <style>
+        :root {
+            --color-background: #0d1117;
+            --color-surface: #161b22;
+            --color-text: #c9d1d9;
+            --color-text-secondary: #8b949e;
+            --color-primary: #58a6ff;
+            --color-primary-hover: #79c0ff;
+            --color-success: #3fb950;
+            --color-border: #30363d;
+            --spacing-base: 16px;
+            --spacing-lg: 24px;
+            --radius: 8px;
+            --transition: 200ms ease;
+        }
+
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            margin: 0;
+            padding: var(--spacing-lg);
+            background-color: var(--color-background);
+            color: var(--color-text);
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            line-height: 1.6;
+        }
+
+        .container {
+            max-width: 1000px;
+            margin: 0 auto;
+        }
+
+        header {
+            margin-bottom: var(--spacing-lg);
+        }
+
+        h1 {
+            margin: 0 0 8px 0;
+            font-size: 28px;
+            font-weight: 600;
+        }
+
+        .subtitle {
+            color: var(--color-text-secondary);
+            font-size: 14px;
+            margin: 0;
+        }
+
+        .content {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: var(--spacing-lg);
+        }
+
+        @media (max-width: 900px) {
+            .content {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .section {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .section-title {
+            font-size: 14px;
+            font-weight: 600;
+            color: var(--color-primary);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 8px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        textarea {
+            padding: var(--spacing-base);
+            background-color: var(--color-surface);
+            color: var(--color-text);
+            border: 1px solid var(--color-border);
+            border-radius: var(--radius);
+            font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+            font-size: 13px;
+            line-height: 1.5;
+            resize: vertical;
+            min-height: 200px;
+            transition: border-color var(--transition), box-shadow var(--transition);
+            outline: none;
+        }
+
+        textarea:focus {
+            border-color: var(--color-primary);
+            box-shadow: 0 0 0 2px rgba(88, 166, 255, 0.15);
+        }
+
+        .output-box {
+            background-color: var(--color-surface);
+            border: 1px solid var(--color-border);
+            border-radius: var(--radius);
+            padding: var(--spacing-base);
+            min-height: 200px;
+            overflow: auto;
+        }
+
+        .output-box code {
+            display: block;
+            white-space: pre-wrap;
+            word-break: break-word;
+        }
+
+        .hljs {
+            background-color: transparent !important;
+            padding: 0 !important;
+            color: var(--color-text) !important;
+        }
+
+        .hljs-string,
+        .hljs-literal {
+            color: #79c0ff;
+        }
+
+        .hljs-number,
+        .hljs-attr {
+            color: #79f0ba;
+        }
+
+        .hljs-keyword {
+            color: #ff7b72;
+        }
+
+        .hljs-title {
+            color: #d2a8ff;
+        }
+
+        .button-group {
+            display: flex;
+            gap: 8px;
+            margin-top: var(--spacing-base);
+        }
+
+        button {
+            padding: 10px 16px;
+            background-color: var(--color-primary);
+            color: #0d1117;
+            border: none;
+            border-radius: var(--radius);
+            font-weight: 600;
+            font-size: 13px;
+            cursor: pointer;
+            transition: background-color var(--transition), transform var(--transition);
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        button:hover {
+            background-color: var(--color-primary-hover);
+            transform: translateY(-1px);
+        }
+
+        button:active {
+            transform: translateY(0);
+        }
+
+        button.secondary {
+            background-color: var(--color-surface);
+            color: var(--color-text);
+            border: 1px solid var(--color-border);
+        }
+
+        button.secondary:hover {
+            background-color: var(--color-border);
+        }
+
+        .info-box {
+            background-color: rgba(88, 166, 255, 0.08);
+            border-left: 3px solid var(--color-primary);
+            padding: var(--spacing-base);
+            border-radius: 4px;
+            font-size: 13px;
+            color: var(--color-text-secondary);
+            margin-bottom: var(--spacing-base);
+        }
+
+        .copy-feedback {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            background-color: var(--color-success);
+            color: white;
+            padding: 12px 16px;
+            border-radius: var(--radius);
+            font-size: 13px;
+            opacity: 0;
+            animation: slideIn 0.3s ease forwards;
+        }
+
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .animation-out {
+            animation: slideOut 0.3s ease forwards;
+        }
+
+        @keyframes slideOut {
+            from {
+                opacity: 1;
+                transform: translateY(0);
+            }
+            to {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+        }
+
+        .stats {
+            font-size: 12px;
+            color: var(--color-text-secondary);
+            margin-top: 8px;
+            display: flex;
+            gap: 16px;
+        }
+
+        .stat {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+
+        .stat-label {
+            font-weight: 500;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>🔧 Bash Command Prettifier</h1>
+            <p class="subtitle">Format and beautify your bash commands with syntax highlighting</p>
+        </header>
+
+        <div class="info-box">
+            💡 Paste your bash command or script and see it formatted with syntax highlighting. Copy the prettified version with one click.
+        </div>
+
+        <div class="content">
+            <!-- Input Section -->
+            <div class="section">
+                <div class="section-title">📝 Input</div>
+                <textarea id="inputCode" placeholder="Paste your bash command or script here...&#10;&#10;Example:&#10;docker run -it -v $(pwd):/app -e NODE_ENV=production node:18-alpine sh -c 'npm install && npm start'"
+                    spellcheck="false"></textarea>
+                <div class="button-group">
+                    <button onclick="clearInput()">Clear</button>
+                    <button class="secondary" onclick="loadExample()">Load Example</button>
+                </div>
+                <div class="stats">
+                    <div class="stat">
+                        <span class="stat-label">Lines:</span>
+                        <span id="inputLines">0</span>
+                    </div>
+                    <div class="stat">
+                        <span class="stat-label">Characters:</span>
+                        <span id="inputChars">0</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Output Section -->
+            <div class="section">
+                <div class="section-title">✨ Output</div>
+                <div class="output-box" id="outputBox">
+                    <code class="language-bash hljs" id="outputCode"></code>
+                </div>
+                <div class="button-group">
+                    <button onclick="copyToClipboard()">📋 Copy Output</button>
+                    <button class="secondary" onclick="downloadOutput()">⬇️ Download</button>
+                </div>
+                <div class="stats">
+                    <div class="stat">
+                        <span class="stat-label">Lines:</span>
+                        <span id="outputLines">0</span>
+                    </div>
+                    <div class="stat">
+                        <span class="stat-label">Characters:</span>
+                        <span id="outputChars">0</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const inputCode = document.getElementById('inputCode');
+        const outputCode = document.getElementById('outputCode');
+        const inputLines = document.getElementById('inputLines');
+        const inputChars = document.getElementById('inputChars');
+        const outputLines = document.getElementById('outputLines');
+        const outputChars = document.getElementById('outputChars');
+
+        // Format bash command to multiline
+        function formatBashCommand(input) {
+            if (!input.trim()) return '';
+
+            // Split by pipes first, then process each segment
+            let lines = [];
+            const pipeParts = input.split('|').map(p => p.trim());
+
+            pipeParts.forEach((part, index) => {
+                if (index > 0) {
+                    // Add pipe from previous line
+                    lines[lines.length - 1] += ' \\';
+                }
+
+                // Split by logical operators (&&, ||, ;)
+                const logicalParts = part.split(/\s*(&&|\|\||;)\s*/);
+
+                for (let i = 0; i < logicalParts.length; i++) {
+                    const segment = logicalParts[i].trim();
+                    if (!segment) continue;
+
+                    if (/^(&&|\|\||;)$/.test(segment)) {
+                        lines[lines.length - 1] += ' \\';
+                        lines.push(segment);
+                    } else {
+                        // Split command and its arguments
+                        const tokens = smartTokenize(segment);
+                        tokens.forEach((token, tokenIndex) => {
+                            if (tokenIndex === 0) {
+                                lines.push(token);
+                            } else {
+                                // Check if token should stay on same line
+                                if (shouldGroupWithCommand(token)) {
+                                    lines[lines.length - 1] += ' ' + token;
+                                } else {
+                                    lines[lines.length - 1] += ' \\';
+                                    lines.push(token);
+                                }
+                            }
+                        });
+                    }
+                }
+
+                if (index < pipeParts.length - 1) {
+                    lines[lines.length - 1] += ' \\';
+                    lines.push('|');
+                }
+            });
+
+            return lines.map((line, i) => {
+                const indent = line.startsWith('&&') || line.startsWith('||') || line === '|' ? '' : '  ';
+                return indent + line;
+            }).join('\n');
+        }
+
+        // Tokenize while respecting quotes and special constructs
+        function smartTokenize(segment) {
+            const tokens = [];
+            let current = '';
+            let inSingleQuote = false;
+            let inDoubleQuote = false;
+            let depth = 0;
+
+            for (let i = 0; i < segment.length; i++) {
+                const char = segment[i];
+                const prev = i > 0 ? segment[i - 1] : '';
+                const next = i < segment.length - 1 ? segment[i + 1] : '';
+
+                if (char === "'" && !inDoubleQuote && prev !== '\\') {
+                    inSingleQuote = !inSingleQuote;
+                    current += char;
+                } else if (char === '"' && !inSingleQuote && prev !== '\\') {
+                    inDoubleQuote = !inDoubleQuote;
+                    current += char;
+                } else if ((char === '(' || char === '{' || char === '[') && !inSingleQuote && !inDoubleQuote) {
+                    depth++;
+                    current += char;
+                } else if ((char === ')' || char === '}' || char === ']') && !inSingleQuote && !inDoubleQuote) {
+                    depth--;
+                    current += char;
+                } else if (char === ' ' && !inSingleQuote && !inDoubleQuote && depth === 0) {
+                    if (current) {
+                        tokens.push(current);
+                        current = '';
+                    }
+                } else {
+                    current += char;
+                }
+            }
+
+            if (current) {
+                tokens.push(current);
+            }
+
+            return tokens;
+        }
+
+        // Determine if a token should stay on same line (e.g., values for flags)
+        function shouldGroupWithCommand(token) {
+            return !token.startsWith('-') && !token.match(/^(if|then|else|elif|fi|for|do|done|while|case|esac)$/);
+        }
+
+        // Update output on input change
+        inputCode.addEventListener('input', () => {
+            const code = inputCode.value;
+            const formatted = formatBashCommand(code);
+            outputCode.textContent = formatted;
+            hljs.highlightElement(outputCode);
+            updateStats();
+        });
+
+        function updateStats() {
+            const input = inputCode.value;
+            const output = outputCode.textContent;
+
+            inputLines.textContent = input.split('\n').length;
+            inputChars.textContent = input.length;
+            outputLines.textContent = output.split('\n').length;
+            outputChars.textContent = output.length;
+        }
+
+        function clearInput() {
+            inputCode.value = '';
+            outputCode.textContent = '';
+            updateStats();
+            inputCode.focus();
+        }
+
+        function loadExample() {
+            const example = `#!/bin/bash
+# Complex kubernetes deployment
+kubectl apply -f deployment.yaml && \\
+  kubectl set image deployment/myapp \\
+    myapp=myapp:v2.0 --record && \\
+  kubectl rollout status deployment/myapp
+
+# Docker compose with environment variables
+docker-compose \\
+  -f docker-compose.yml \\
+  -f docker-compose.prod.yml \\
+  up -d && \\
+  docker-compose logs -f
+
+# Find and process files
+find ./src -type f -name "*.ts" | \\
+  xargs grep -l "TODO" | \\
+  while read file; do
+    echo "Processing: $file"
+    sed -i 's/TODO/DONE/g' "$file"
+  done`;
+            inputCode.value = example;
+            inputCode.dispatchEvent(new Event('input'));
+            inputCode.focus();
+        }
+
+        function copyToClipboard() {
+            const text = outputCode.textContent;
+            navigator.clipboard.writeText(text).then(() => {
+                showFeedback('Copied to clipboard!');
+            }).catch(() => {
+                fallbackCopy(text);
+            });
+        }
+
+        function fallbackCopy(text) {
+            const textarea = document.createElement('textarea');
+            textarea.value = text;
+            document.body.appendChild(textarea);
+            textarea.select();
+            document.execCommand('copy');
+            document.body.removeChild(textarea);
+            showFeedback('Copied to clipboard!');
+        }
+
+        function downloadOutput() {
+            const text = outputCode.textContent;
+            const element = document.createElement('a');
+            element.setAttribute('href', 'data:text/plain;charset=utf-8,' + encodeURIComponent(text));
+            element.setAttribute('download', 'command.sh');
+            element.style.display = 'none';
+            document.body.appendChild(element);
+            element.click();
+            document.body.removeChild(element);
+            showFeedback('Downloaded as command.sh');
+        }
+
+        function showFeedback(message) {
+            const feedback = document.createElement('div');
+            feedback.className = 'copy-feedback';
+            feedback.textContent = message;
+            document.body.appendChild(feedback);
+
+            setTimeout(() => {
+                feedback.classList.add('animation-out');
+                setTimeout(() => {
+                    document.body.removeChild(feedback);
+                }, 300);
+            }, 2000);
+        }
+
+        // Initialize with empty stats
+        updateStats();
+    </script>
+</body>
+</html>
